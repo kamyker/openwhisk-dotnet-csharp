@@ -19,13 +19,25 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Apache.OpenWhisk.Runtime.Common
 {
     public class Startup
     {
+        public Startup( IConfiguration configuration )
+        {
+            Configuration = configuration;
+        }
+
+        public IConfiguration Configuration { get; }
+
+        public void ConfigureServices( IServiceCollection services )
+        {
+            services.AddResponseCompression();
+        }
+
         public static void WriteLogMarkers()
         {
             Console.WriteLine("XXX_THE_END_OF_A_WHISK_ACTIVATION_XXX");
@@ -38,6 +50,7 @@ namespace Apache.OpenWhisk.Runtime.Common
             PathString runPath = new PathString("/run");
             Init init = new Init();
             Run run = null;
+            app.UseResponseCompression();
             app.Run(async (httpContext) =>
                 {
                     if (httpContext.Request.Path.Equals(initPath))
