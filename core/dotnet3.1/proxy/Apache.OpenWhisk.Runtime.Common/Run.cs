@@ -26,20 +26,26 @@ namespace Apache.OpenWhisk.Runtime.Common
 {
     public class Run
     {
-        private readonly Type _type;
-        private readonly MethodInfo _method;
+        private readonly Func<JObject,Task<JObject>> _methodAsync;
+        private readonly Func<JObject,JObject> _method;
+
         private readonly bool _awaitableMethod;
 
-        public Run(Type type, MethodInfo method, bool awaitableMethod)
+        public Run(MethodInfo method, bool awaitableMethod)
         {
-            _type = type;
-            _method = method;
+            if( awaitableMethod )
+                _methodAsync = (Func<JObject, Task<JObject>>)Delegate
+                    .CreateDelegate( typeof( Func<JObject, Task<JObject>> ), method );
+            else
+                _method = (Func<JObject, JObject>)Delegate
+                    .CreateDelegate( typeof( Func<JObject, JObject> ), method );
+
             _awaitableMethod = awaitableMethod;
         }
 
         public async Task HandleRequest(HttpContext httpContext)
         {
-            if (_type == null || _method == null)
+            if ( _methodAsync == null && _method == null)
             {
                 await httpContext.Response.WriteError("Cannot invoke an uninitialized action.");
                 return;
@@ -80,10 +86,10 @@ namespace Apache.OpenWhisk.Runtime.Common
                     JObject output;
                     
                     if(_awaitableMethod) {
-                        output = (JObject) await (dynamic) _method.Invoke(null, new object[] {valObject});
+                        output = await _methodAsync(valObject);
                     }
                     else {
-                        output = (JObject) _method.Invoke(null, new object[] {valObject});
+                        output = _method(valObject);
                     }
 
                     if (output == null)

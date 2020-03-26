@@ -50,7 +50,7 @@ namespace Apache.OpenWhisk.Runtime.Common
                 {
                     await httpContext.Response.WriteError("Cannot initialize the action more than once.");
                     Console.Error.WriteLine("Cannot initialize the action more than once.");
-                    return (new Run(Type, Method, AwaitableMethod));
+                    return (new Run(Method, AwaitableMethod));
                 }
 
                 string body = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
@@ -148,7 +148,7 @@ namespace Apache.OpenWhisk.Runtime.Common
 
                 AwaitableMethod = (Method.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null);
 
-                return (new Run(Type, Method, AwaitableMethod));
+                return (new Run(Method, AwaitableMethod));
             }
             catch (Exception ex)
             {
