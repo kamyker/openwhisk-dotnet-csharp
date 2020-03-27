@@ -16,29 +16,27 @@
  */
 
 using System;
-using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json.Linq;
 
 namespace Apache.OpenWhisk.Runtime.Common
 {
     public class Run
     {
-        private readonly Func<JObject,Task<JObject>> _methodAsync;
-        private readonly Func<JObject,JObject> _method;
+        private readonly Func<HttpRequest,Task<string>> _methodAsync;
+        private readonly Func<HttpRequest,string> _method;
 
         private readonly bool _awaitableMethod;
 
         public Run(MethodInfo method, bool awaitableMethod)
         {
             if( awaitableMethod )
-                _methodAsync = (Func<JObject, Task<JObject>>)Delegate
-                    .CreateDelegate( typeof( Func<JObject, Task<JObject>> ), method );
+                _methodAsync = (Func<HttpRequest, Task<string>>)Delegate
+                    .CreateDelegate( typeof( Func<HttpRequest, Task<string>> ), method );
             else
-                _method = (Func<JObject, JObject>)Delegate
-                    .CreateDelegate( typeof( Func<JObject, JObject> ), method );
+                _method = (Func<HttpRequest, string>)Delegate
+                    .CreateDelegate( typeof( Func<HttpRequest, string> ), method );
 
             _awaitableMethod = awaitableMethod;
         }
@@ -53,44 +51,42 @@ namespace Apache.OpenWhisk.Runtime.Common
 
             try
             {
-                string body = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
+                //string body = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
 
-                JObject inputObject = string.IsNullOrEmpty(body) ? null : JObject.Parse(body);
+                //JObject inputObject = string.IsNullOrEmpty(body) ? null : JObject.Parse(body);
 
-                JObject valObject = null;
+                //JObject valObject = null;
 
-                if (inputObject != null)
-                {
-                    valObject = inputObject["value"] as JObject;
-                    foreach (JToken token in inputObject.Children())
-                    {
-                        try
-                        {
-                            if (token.Path.Equals("value", StringComparison.InvariantCultureIgnoreCase))
-                                continue;
-                            string envKey = $"__OW_{token.Path.ToUpperInvariant()}";
-                            string envVal = token.First.ToString();
-                            Environment.SetEnvironmentVariable(envKey, envVal);
-                            //Console.WriteLine($"Set environment variable \"{envKey}\" to \"{envVal}\".");
-                        }
-                        catch (Exception)
-                        {
-                            await Console.Error.WriteLineAsync(
-                                $"Unable to set environment variable for the \"{token.Path}\" token.");
-                        }
-                    }
-                }
+                //if (inputObject != null)
+                //{
+                //    valObject = inputObject["value"] as JObject;
+                //    foreach (JToken token in inputObject.Children())
+                //    {
+                //        try
+                //        {
+                //            if (token.Path.Equals("value", StringComparison.InvariantCultureIgnoreCase))
+                //                continue;
+                //            string envKey = $"__OW_{token.Path.ToUpperInvariant()}";
+                //            string envVal = token.First.ToString();
+                //            Environment.SetEnvironmentVariable(envKey, envVal);
+                //            //Console.WriteLine($"Set environment variable \"{envKey}\" to \"{envVal}\".");
+                //        }
+                //        catch (Exception)
+                //        {
+                //            await Console.Error.WriteLineAsync(
+                //                $"Unable to set environment variable for the \"{token.Path}\" token.");
+                //        }
+                //    }
+                //}
 
                 try
                 {
-                    JObject output;
+                    string output;
                     
-                    if(_awaitableMethod) {
-                        output = await _methodAsync(valObject);
-                    }
-                    else {
-                        output = _method(valObject);
-                    }
+                    if(_awaitableMethod) 
+                        output = await _methodAsync(httpContext.Request);
+                    else 
+                        output = _method(httpContext.Request);
 
                     if (output == null)
                     {
@@ -98,7 +94,7 @@ namespace Apache.OpenWhisk.Runtime.Common
                         Console.Error.WriteLine("The action returned null");
                         return;
                     }
-
+                    //httpContext.Response.WriteResponse
                     await httpContext.Response.WriteResponse(200, output.ToString());
                 }
                 catch (Exception ex)

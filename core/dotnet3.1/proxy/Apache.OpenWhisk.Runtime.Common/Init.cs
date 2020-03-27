@@ -17,16 +17,28 @@
 
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json.Linq;
 
 namespace Apache.OpenWhisk.Runtime.Common
 {
     public class Init
     {
+        public struct MethodToAdd
+        {
+            public Value value { get; set; }
+            public struct Value
+            {
+                public string main { get; set; }
+                public bool binary { get; set; }
+                public string code { get; set; } // in Base64
+            }
+        }
+
         private readonly SemaphoreSlim _initSemaphoreSlim = new SemaphoreSlim(1, 1);
 
         public bool Initialized { get; private set; }
@@ -52,56 +64,48 @@ namespace Apache.OpenWhisk.Runtime.Common
                     Console.Error.WriteLine("Cannot initialize the action more than once.");
                     return (new Run(Method, AwaitableMethod));
                 }
-
                 string body = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
-                JObject inputObject = JObject.Parse(body);
-                if (!inputObject.ContainsKey("value"))
+                MethodToAdd.Value methodToAdd = JsonSerializer.Deserialize<MethodToAdd>(body).value;
+
+                if (string.IsNullOrEmpty(methodToAdd.code))
                 {
                     await httpContext.Response.WriteError("Missing main/no code to execute.");
-                    return (null);
+                    return null;
                 }
 
-                JToken message = inputObject["value"];
-
-                if (message["main"] == null || message["binary"] == null || message["code"] == null)
+                if (string.IsNullOrEmpty(methodToAdd.main) ||
+                    string.IsNullOrEmpty(methodToAdd.code))
                 {
                     await httpContext.Response.WriteError("Missing main/no code to execute.");
-                    return (null);
+                    return null;
                 }
 
-                string main = message["main"].ToString();
-
-                bool binary = message["binary"].ToObject<bool>();
-
-                if (!binary)
+                if (!methodToAdd.binary )
                 {
                     await httpContext.Response.WriteError("code must be binary (zip file).");
-                    return (null);
+                    return null;
                 }
 
-                string[] mainParts = main.Split("::");
+                string[] mainParts = methodToAdd.main.Split("::");
                 if (mainParts.Length != 3)
                 {
                     await httpContext.Response.WriteError("main required format is \"Assembly::Type::Function\".");
-                    return (null);
+                    return null;
                 }
 
-                string base64Zip = message["code"].ToString();
                 string tempPath = Path.Combine(Environment.CurrentDirectory, Guid.NewGuid().ToString());
-                string tempFile = Path.GetTempFileName();
-                await File.WriteAllBytesAsync(tempFile, Convert.FromBase64String(base64Zip));
                 try
                 {
-                    System.IO.Compression.ZipFile.ExtractToDirectory(tempFile, tempPath);
+                    using ( var zipStream = new MemoryStream( Convert.FromBase64String( methodToAdd.code ) ) )
+                    using ( var zip = new ZipArchive( zipStream ) )
+                    {
+                        zip.ExtractToDirectory( tempPath );
+                    }
                 }
                 catch (Exception)
                 {
                     await httpContext.Response.WriteError("Unable to decompress package.");
-                    return (null);
-                }
-                finally
-                {
-                    File.Delete(tempFile);
+                    return null;
                 }
 
                 Environment.CurrentDirectory = tempPath;
@@ -113,7 +117,7 @@ namespace Apache.OpenWhisk.Runtime.Common
                 if (!File.Exists(assemblyPath))
                 {
                     await httpContext.Response.WriteError($"Unable to locate requested assembly (\"{assemblyFile}\").");
-                    return (null);
+                    return null;
                 }
 
                 try
