@@ -17,6 +17,8 @@
 
 using System;
 using System.Reflection;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
@@ -24,19 +26,19 @@ namespace Apache.OpenWhisk.Runtime.Common
 {
     public class Run
     {
-        private readonly Func<HttpRequest,Task<string>> _methodAsync;
-        private readonly Func<HttpRequest,string> _method;
+        private readonly Func<HttpRequest,Task<object>> _methodAsync;
+        private readonly Func<HttpRequest,object> _method;
 
         private readonly bool _awaitableMethod;
 
         public Run(MethodInfo method, bool awaitableMethod)
         {
             if( awaitableMethod )
-                _methodAsync = (Func<HttpRequest, Task<string>>)Delegate
-                    .CreateDelegate( typeof( Func<HttpRequest, Task<string>> ), method );
+                _methodAsync = (Func<HttpRequest, Task<object>>)Delegate
+                    .CreateDelegate( typeof( Func<HttpRequest, Task<object>> ), method );
             else
-                _method = (Func<HttpRequest, string>)Delegate
-                    .CreateDelegate( typeof( Func<HttpRequest, string> ), method );
+                _method = (Func<HttpRequest, object>)Delegate
+                    .CreateDelegate( typeof( Func<HttpRequest, object> ), method );
 
             _awaitableMethod = awaitableMethod;
         }
@@ -51,6 +53,11 @@ namespace Apache.OpenWhisk.Runtime.Common
 
             try
             {
+                //string body = JsonSerializer.Serialize( new HttpResponseExtension.Response("test") );
+                //httpContext.Response.StatusCode = 200;
+                //httpContext.Response.ContentLength = Encoding.UTF8.GetByteCount( body );
+                //await httpContext.Response.WriteAsync( body );
+                //return;
                 //string body = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
 
                 //JObject inputObject = string.IsNullOrEmpty(body) ? null : JObject.Parse(body);
@@ -81,9 +88,8 @@ namespace Apache.OpenWhisk.Runtime.Common
 
                 try
                 {
-                    string output;
-                    
-                    if(_awaitableMethod) 
+                    object output;
+                    if (_awaitableMethod) 
                         output = await _methodAsync(httpContext.Request);
                     else 
                         output = _method(httpContext.Request);
@@ -95,7 +101,7 @@ namespace Apache.OpenWhisk.Runtime.Common
                         return;
                     }
                     //httpContext.Response.WriteResponse
-                    await httpContext.Response.WriteResponse(200, output.ToString());
+                    await httpContext.Response.WriteResponse(200, output);
                 }
                 catch (Exception ex)
                 {

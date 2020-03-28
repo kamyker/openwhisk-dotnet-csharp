@@ -21,7 +21,6 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 
 namespace Apache.OpenWhisk.Runtime.Common
@@ -64,14 +63,21 @@ namespace Apache.OpenWhisk.Runtime.Common
                     Console.Error.WriteLine("Cannot initialize the action more than once.");
                     return (new Run(Method, AwaitableMethod));
                 }
-                string body = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
-                MethodToAdd.Value methodToAdd = JsonSerializer.Deserialize<MethodToAdd>(body).value;
+                //string body = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
+                //MethodToAdd.Value methodToAdd = JsonSerializer.Deserialize<MethodToAdd>(body).value;
+                //MethodToAdd.Value methodToAdd = JsonConvert.DeserializeObject<MethodToAdd>(body).value;
 
-                if (string.IsNullOrEmpty(methodToAdd.code))
-                {
-                    await httpContext.Response.WriteError("Missing main/no code to execute.");
-                    return null;
-                }
+                //fastest with much lower memory usage
+                MethodToAdd.Value methodToAdd = (await System.Text.Json.JsonSerializer.DeserializeAsync<MethodToAdd>(httpContext.Request.Body)).value;
+                
+                //MethodToAdd.Value methodToAdd;
+                //using ( StreamReader reader = new StreamReader( httpContext.Request.Body ) )
+                //using ( JsonTextReader jsonReader = new JsonTextReader( reader ) )
+                //{
+                //    JsonSerializer ser = new JsonSerializer();
+                //    methodToAdd = ser.Deserialize<MethodToAdd>( jsonReader ).value;
+                //}
+
 
                 if (string.IsNullOrEmpty(methodToAdd.main) ||
                     string.IsNullOrEmpty(methodToAdd.code))
@@ -156,7 +162,7 @@ namespace Apache.OpenWhisk.Runtime.Common
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine(ex.StackTrace);
+                Console.Error.WriteLine(ex.ToString()) ;
                 await httpContext.Response.WriteError(ex.Message
 #if DEBUG
                                                   + ", " + ex.StackTrace

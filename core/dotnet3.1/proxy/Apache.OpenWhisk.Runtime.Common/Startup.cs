@@ -18,24 +18,12 @@
 using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Apache.OpenWhisk.Runtime.Common
 {
     public class Startup
     {
-        public Startup( IConfiguration configuration )
-        {
-            Configuration = configuration;
-        }
-
-        public IConfiguration Configuration { get; }
-
-        public void ConfigureServices( IServiceCollection services )
-        {
-            services.AddResponseCompression();
-        }
 
         public static void WriteLogMarkers()
         {
@@ -43,13 +31,12 @@ namespace Apache.OpenWhisk.Runtime.Common
             Console.Error.WriteLine("XXX_THE_END_OF_A_WHISK_ACTIVATION_XXX");
         }
         
-        public void Configure(IApplicationBuilder app)
+        public void Configure(IApplicationBuilder app )
         {
             PathString initPath = new PathString("/init");
             PathString runPath = new PathString("/run");
             Init init = new Init();
             Run run = null;
-            app.UseResponseCompression();
             app.Run(async (httpContext) =>
                 {
                     if (httpContext.Request.Path.Equals(initPath))
@@ -80,6 +67,7 @@ namespace Apache.OpenWhisk.Runtime.Common
                     }
                 }
             );
+            //app.UseResponseCompression();
         }
     }
 }

@@ -35,12 +35,13 @@ namespace Apache.OpenWhisk.Runtime.Dotnet.Minimal
                 .UseKestrel(options =>
                 {
                     options.Limits.MaxRequestBodySize = null;
-                })
+                    options.AllowSynchronousIO = true;
+                } )
                 .ConfigureLogging((hostingContext, logging) =>
                 {
                     logging.ClearProviders();
                 })
-		.SuppressStatusMessages(true)
+		        .SuppressStatusMessages(true)
                 .UseStartup<Startup>();
 
     }
