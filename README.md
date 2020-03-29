@@ -69,7 +69,7 @@ Using in IBM Cloud:
 wsk action update {methodInfo.Name} out.zip --docker kamyker/openwhisk-action-dotnet-v3.1:stable --main {methodInfo.DeclaringType.Assembly.GetName().Name}::{methodInfo.DeclaringType.FullName}::{methodInfo.Name} --web true
 ```
 
-It's important to set your proejct to netcoreapp3.1 and use AspNetCore frameworks. This is how .csproj should look like:
+It's important to set your proejct to netcoreapp3.1 and use AspNetCore framework. This is how .csproj should look like:
 ```
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
