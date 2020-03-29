@@ -19,9 +19,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <!--<PublishReadyToRun>true</PublishReadyToRun>
+    <PublishReadyToRun>true</PublishReadyToRun>
     <PublishReadyToRunShowWarnings>true</PublishReadyToRunShowWarnings>
-    <PublishTrimmed>true</PublishTrimmed>-->
+    <PublishTrimmed>true</PublishTrimmed>
+    <RuntimeIdentifier>linux-musl-x64</RuntimeIdentifier>
+    <CrossGenDuringPublish>false</CrossGenDuringPublish>
+    <!--<PublishSingleFile>true</PublishSingleFile>-->
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,11 +34,16 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <TrimmerRootAssembly Include="System.Threading.Tasks" />
     <TrimmerRootAssembly Include="System.Diagnostics.Debug" />
-    <TrimmerRootAssembly Include="Newtonsoft.Json" />
+
+    <!--All below only needed for PublishReadyToRun-->
+    <!--<TrimmerRootAssembly Include="System.Resources.Writer" />
+    <TrimmerRootAssembly Include="System.Transactions" />
+    <TrimmerRootAssembly Include="System.Diagnostics.FileVersionInfo" />
+    <TrimmerRootAssembly Include="System.Runtime.InteropServices" />-->
   </ItemGroup>
-  
+
 </Project>

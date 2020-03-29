@@ -16,10 +16,11 @@
  */
 
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
+//using Newtonsoft.Json.Linq;
+//using Newtonsoft.Json;
 
 namespace Apache.OpenWhisk.Runtime.Common
 {
@@ -29,7 +30,7 @@ namespace Apache.OpenWhisk.Runtime.Common
 		{
 			response.StatusCode = code;
 
-			string body = JsonConvert.SerializeObject( new Response(content) );
+			string body = JsonSerializer.Serialize( new Response(content) );
 			response.ContentLength = Encoding.UTF8.GetByteCount( body );
 			await response.WriteAsync( body );
 			//same as response.WriteAsync( body ) //https://github.com/aspnet/HttpAbstractions/blob/master/src/Microsoft.AspNetCore.Http.Abstractions/Extensions/HttpResponseWritingExtensions.cs
@@ -49,8 +50,9 @@ namespace Apache.OpenWhisk.Runtime.Common
 
 		public static async Task WriteError( this HttpResponse response, string errorMessage )
 		{
-			JObject message = new JObject {{"error", new JValue(errorMessage)}};
-			string body = JsonConvert.SerializeObject( message );
+			//JObject message = new JObject {{"error", new JValue(errorMessage)}};
+			//string body = JsonConvert.SerializeObject( message );
+			string body = JsonSerializer.Serialize( new ResponseError(errorMessage) );
 			response.ContentLength = Encoding.UTF8.GetByteCount( body );
 			response.StatusCode = 502;
 			await response.WriteAsync( body );
@@ -66,6 +68,16 @@ namespace Apache.OpenWhisk.Runtime.Common
 			public Response( object body )
 			{
 				this.body = body;
+			}
+		}
+
+		public class ResponseError
+		{
+			public string error { get; set; }
+
+			public ResponseError( string error )
+			{
+				this.error = error;
 			}
 		}
 

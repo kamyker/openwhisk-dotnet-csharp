@@ -26,19 +26,19 @@ namespace Apache.OpenWhisk.Runtime.Common
 {
     public class Run
     {
-        private readonly Func<HttpRequest,Task<object>> _methodAsync;
-        private readonly Func<HttpRequest,object> _method;
+        private readonly Func<HttpContext,Task> _methodAsync;
+        private readonly Action<HttpContext> _method;
 
         private readonly bool _awaitableMethod;
 
         public Run(MethodInfo method, bool awaitableMethod)
         {
             if( awaitableMethod )
-                _methodAsync = (Func<HttpRequest, Task<object>>)Delegate
-                    .CreateDelegate( typeof( Func<HttpRequest, Task<object>> ), method );
+                _methodAsync = (Func<HttpContext, Task>)Delegate
+                    .CreateDelegate( typeof( Func<HttpContext, Task> ), method );
             else
-                _method = (Func<HttpRequest, object>)Delegate
-                    .CreateDelegate( typeof( Func<HttpRequest, object> ), method );
+                _method = (Action<HttpContext>)Delegate
+                    .CreateDelegate( typeof( Action<HttpContext> ), method );
 
             _awaitableMethod = awaitableMethod;
         }
@@ -88,20 +88,31 @@ namespace Apache.OpenWhisk.Runtime.Common
 
                 try
                 {
-                    object output;
-                    if (_awaitableMethod) 
-                        output = await _methodAsync(httpContext.Request);
-                    else 
-                        output = _method(httpContext.Request);
+                    if ( _awaitableMethod )
+                        await _methodAsync( httpContext );
+                    else
+                        _method( httpContext );
 
-                    if (output == null)
-                    {
-                        await httpContext.Response.WriteError("The action returned null");
-                        Console.Error.WriteLine("The action returned null");
-                        return;
-                    }
-                    //httpContext.Response.WriteResponse
-                    await httpContext.Response.WriteResponse(200, output);
+                    //await httpContext.Response.WriteResponse(200, new { msg = "test" } );
+
+                    //httpContext.Response.StatusCode = 200;
+                    //string body = JsonSerializer.Serialize( new { body = new { msg = "test" } } );
+                    ////string body = JsonSerializer.Serialize( new HttpResponseExtension.Response(new { msg = "test" } ) );
+                    //httpContext.Response.ContentLength = Encoding.UTF8.GetByteCount( body );
+                    //await httpContext.Response.WriteAsync( body );
+
+                    //httpContext.Response.StatusCode = 200;
+                    //string response = JsonSerializer.Serialize( new { body = new { msg = "test" } } );
+                    //await httpContext.Response.WriteAsync( response );
+                    //httpContext.Response.ContentLength = Encoding.UTF8.GetByteCount( response );
+                    //if (output == null)
+                    //{
+                    //    await httpContext.Response.WriteError("The action returned null");
+                    //    Console.Error.WriteLine("The action returned null");
+                    //    return;
+                    //}
+                    ////httpContext.Response.WriteResponse
+                    //await httpContext.Response.WriteResponse(200, output);
                 }
                 catch (Exception ex)
                 {
