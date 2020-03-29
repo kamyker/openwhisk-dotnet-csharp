@@ -92,27 +92,6 @@ namespace Apache.OpenWhisk.Runtime.Common
                         await _methodAsync( httpContext );
                     else
                         _method( httpContext );
-
-                    //await httpContext.Response.WriteResponse(200, new { msg = "test" } );
-
-                    //httpContext.Response.StatusCode = 200;
-                    //string body = JsonSerializer.Serialize( new { body = new { msg = "test" } } );
-                    ////string body = JsonSerializer.Serialize( new HttpResponseExtension.Response(new { msg = "test" } ) );
-                    //httpContext.Response.ContentLength = Encoding.UTF8.GetByteCount( body );
-                    //await httpContext.Response.WriteAsync( body );
-
-                    //httpContext.Response.StatusCode = 200;
-                    //string response = JsonSerializer.Serialize( new { body = new { msg = "test" } } );
-                    //await httpContext.Response.WriteAsync( response );
-                    //httpContext.Response.ContentLength = Encoding.UTF8.GetByteCount( response );
-                    //if (output == null)
-                    //{
-                    //    await httpContext.Response.WriteError("The action returned null");
-                    //    Console.Error.WriteLine("The action returned null");
-                    //    return;
-                    //}
-                    ////httpContext.Response.WriteResponse
-                    //await httpContext.Response.WriteResponse(200, output);
                 }
                 catch (Exception ex)
                 {

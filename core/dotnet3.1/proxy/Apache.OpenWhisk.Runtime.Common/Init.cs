@@ -149,15 +149,15 @@ namespace Apache.OpenWhisk.Runtime.Common
 
                 Initialized = true;
 
-                //AwaitableMethod = (Method.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null);
-                AwaitableMethod = Method.ReturnType == typeof(Task);
+                AwaitableMethod = (Method.ReturnType.GetMethod( nameof( Task.GetAwaiter ) ) != null);
+                //AwaitableMethod = Method.ReturnType == typeof(Task);
 
                 return (new Run(Method, AwaitableMethod));
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine(ex.ToString()) ;
-                await httpContext.Response.WriteError(ex.Message
+                await httpContext.Response.WriteError( ex.ToString()
 #if DEBUG
                                                   + ", " + ex.StackTrace
 #endif
