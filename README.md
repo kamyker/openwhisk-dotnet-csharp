@@ -1,37 +1,76 @@
-<!--
-#
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
--->
+# Highly optimized .NET Core runtime for OpenWhisk
 
-# Apache OpenWhisk runtimes for .NET Core
+Start by reading ibm docs and running sample function: https://cloud.ibm.com/docs/openwhisk?topic=cloud-functions-prep#prep_dotnet
 
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-[![Build Status](https://travis-ci.org/apache/openwhisk-runtime-dotnet.svg?branch=master)](https://travis-ci.org/apache/openwhisk-runtime-dotnet)
+New method signature:
+```
+public static async Task Hello( HttpContext httpContext )
+```
 
-## Changelogs
+I recommend adding this extension class to your project:
+```
+using Microsoft.AspNetCore.Http;
+using System.Collections.Generic;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 
-- [.NET Core 2.2 CHANGELOG.md](core/dotnet2.2/CHANGELOG.md)
-- [.NET Core 3.1 CHANGELOG.md](core/dotnet3.1/CHANGELOG.md)
+public static class KSOpenWhiskExtension
+{
+	public static async Task WriteOWReponse( this HttpContext context, object content, int statusCode = 200, KeyValuePair<string, string>[] headers = null )
+	{
+		context.Response.StatusCode = 200; //this has to be 200 otherwise openwhisk fails
+		string body = JsonSerializer.Serialize( new OWResponse(content, statusCode, headers));
+		context.Response.ContentLength = Encoding.UTF8.GetByteCount( body );
+		await context.Response.WriteAsync( body );
+	}
 
-## Quick Start Guides
+	public class OWResponse
+	{
+		public int statusCode { get; set; }
+		public object body { get; set; }
+		public KeyValuePair<string, string>[] headers;
 
-- [.NET Core 2.2](core/dotnet2.2/QUICKSTART.md)
-- [.NET Core 3.1](core/dotnet3.1/QUICKSTART.md)
+		public OWResponse( object body, int statusCode, KeyValuePair<string, string>[] headers )
+		{
+			this.statusCode = statusCode;
+			this.body = body;
+			this.headers = headers;
+		}
+	}
+}
+```
 
-# License
+Simple usage:
+```
+using Microsoft.AspNetCore.Http;
+using System.Threading.Tasks;
 
-[Apache 2.0](LICENSE.txt)
+namespace Functions
+{
+	public static class HelloClass
+	{
+		public static async Task Hello( HttpContext httpContext )
+		{
+			await httpContext.WriteOWReponse( new { msg = "Hello my friend" } );
+		}
+	}
+```
+
+Using in IBM Cloud:
+```
+wsk action update {methodInfo.Name} out.zip --docker kamyker/openwhisk-action-dotnet-v3.1:stable --main {methodInfo.DeclaringType.Assembly.GetName().Name}::{methodInfo.DeclaringType.FullName}::{methodInfo.Name} --web true
+```
+
+It's important to set your proejct to netcoreapp3.1 and use AspNetCore frameworks. This is how .csproj should look like:
+```
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>
+```
