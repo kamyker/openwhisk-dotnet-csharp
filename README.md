@@ -9,8 +9,8 @@ public static async Task Hello( HttpContext httpContext )
 
 Few stats:
 - cold start of empty function on IBM ~350ms
-- cold start of 6kb function on IBM ~570ms
-- cold start of 6kb function on IBM with their default runtime ~1450ms
+- cold start of 6mb function on IBM ~570ms
+- cold start of 6mb function on IBM with their default runtime ~1450ms
 
 
 I recommend adding this extension class to your project:
