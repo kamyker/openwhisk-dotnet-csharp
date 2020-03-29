@@ -23,9 +23,17 @@ using System.Threading.Tasks;
 
 public static class KSOpenWhiskExtension
 {
-	public static async Task<T> ReadOWRequest<T>( this HttpContext context, JsonSerializerOptions options = null, CancellationToken token = default )
+	public static async Task<T> ReadOWRequestAsJsonObject<T>( this HttpContext context, JsonSerializerOptions options = null, CancellationToken token = default )
 	{
-		return (await JsonSerializer.DeserializeAsync<OWRequest<T>>( context.Request.Body, options, token )).value;
+		var req = await JsonSerializer.DeserializeAsync<OWRequest>( context.Request.Body, options, token );
+
+		if ( string.IsNullOrEmpty( req.value.__ow_body ) )
+			return default;
+
+		byte[] byteArray = Convert.FromBase64String(req.value.__ow_body);
+
+		using var stream = new MemoryStream( byteArray );
+		return await JsonSerializer.DeserializeAsync<T>( stream );
 	}
 
 	public static async Task WriteOWResponse( this HttpContext context, object content, int statusCode = 200, KeyValuePair<string, string>[] headers = null, JsonSerializerOptions options = null )
@@ -36,12 +44,17 @@ public static class KSOpenWhiskExtension
 		await context.Response.WriteAsync( body );
 	}
 
-	public class OWRequest<T>
+	public struct OWRequest
 	{
-		public T value { get; set; } //body of request
+		public OWRequestValue value { get; set; }
+		public struct OWRequestValue
+		{
+			public string __ow_body { get; set; } //body of request in base64
+			public string __ow_query { get; set; } //normal string
+		}
 	}
 
-	public class OWResponse
+	public struct OWResponse
 	{
 		public int statusCode { get; set; }
 		public object body { get; set; }
@@ -74,12 +87,15 @@ namespace Functions
 }
 ```
 
+
 Updating action (for IBM Cloud change "wsk" to "ibmcloud fn"):
 ```
-wsk action update {methodInfo.Name} out.zip --docker kamyker/openwhisk-action-dotnet-v3.1:stable --main {methodInfo.DeclaringType.Assembly.GetName().Name}::{methodInfo.DeclaringType.FullName}::{methodInfo.Name} --web true
+wsk action update {methodInfo.Name} out.zip --docker kamyker/openwhisk-action-dotnet-v3.1:stable --main {methodInfo.DeclaringType.Assembly.GetName().Name}::{methodInfo.DeclaringType.FullName}::{methodInfo.Name} --web raw
 ```
+Use --web raw to be able to always read request using httpContext.ReadOWRequestAsJsonObject()
 
-It's important to set your proejct to netcoreapp3.1 and use AspNetCore framework. This is how .csproj should look like:
+
+It's important to set your project to netcoreapp3.1 and use AspNetCore framework. This is how .csproj should look like:
 ```
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
