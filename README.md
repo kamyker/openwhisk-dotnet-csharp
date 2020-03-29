@@ -1,5 +1,7 @@
 # Highly optimized .NET Core runtime for OpenWhisk
 
+![openwhisk dotnet](https://www.ibm.com/blogs/cloud-archive/wp-content/uploads/2016/11/OpenWhisk-Hero-Image-800x400.png)
+
 Start by reading ibm docs and running sample function: https://cloud.ibm.com/docs/openwhisk?topic=cloud-functions-prep#prep_dotnet
 
 New method signature:
