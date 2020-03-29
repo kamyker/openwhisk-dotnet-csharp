@@ -92,7 +92,7 @@ namespace Functions
 
 Updating action (for IBM Cloud change "wsk" to "ibmcloud fn"):
 ```
-wsk action update {methodInfo.Name} out.zip --docker kamyker/openwhisk-action-dotnet-v3.1:stable --main {methodInfo.DeclaringType.Assembly.GetName().Name}::{methodInfo.DeclaringType.FullName}::{methodInfo.Name} --web raw
+wsk action update {methodInfo.Name} out.zip --docker kamyker/openwhisk-action-dotnet-v3.1 --main {methodInfo.DeclaringType.Assembly.GetName().Name}::{methodInfo.DeclaringType.FullName}::{methodInfo.Name} --web raw
 ```
 Use --web raw to be able to always read request using httpContext.ReadOWRequestAsJsonObject()
 
