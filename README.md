@@ -23,12 +23,22 @@ using System.Threading.Tasks;
 
 public static class KSOpenWhiskExtension
 {
-	public static async Task WriteOWResponse( this HttpContext context, object content, int statusCode = 200, KeyValuePair<string, string>[] headers = null )
+	public static async Task<T> ReadOWRequest<T>( this HttpContext context, JsonSerializerOptions options = null, CancellationToken token = default )
+	{
+		return (await JsonSerializer.DeserializeAsync<OWRequest<T>>( context.Request.Body, options, token )).value;
+	}
+
+	public static async Task WriteOWResponse( this HttpContext context, object content, int statusCode = 200, KeyValuePair<string, string>[] headers = null, JsonSerializerOptions options = null )
 	{
 		context.Response.StatusCode = 200; //this has to be 200 otherwise openwhisk fails
-		string body = JsonSerializer.Serialize( new OWResponse(content, statusCode, headers));
+		string body = JsonSerializer.Serialize<OWResponse>( new OWResponse(content, statusCode, headers), options);
 		context.Response.ContentLength = Encoding.UTF8.GetByteCount( body );
 		await context.Response.WriteAsync( body );
+	}
+
+	public class OWRequest<T>
+	{
+		public T value { get; set; } //body of request
 	}
 
 	public class OWResponse
