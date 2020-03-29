@@ -23,7 +23,7 @@ using System.Threading.Tasks;
 
 public static class KSOpenWhiskExtension
 {
-	public static async Task WriteOWReponse( this HttpContext context, object content, int statusCode = 200, KeyValuePair<string, string>[] headers = null )
+	public static async Task WriteOWResponse( this HttpContext context, object content, int statusCode = 200, KeyValuePair<string, string>[] headers = null )
 	{
 		context.Response.StatusCode = 200; //this has to be 200 otherwise openwhisk fails
 		string body = JsonSerializer.Serialize( new OWResponse(content, statusCode, headers));
