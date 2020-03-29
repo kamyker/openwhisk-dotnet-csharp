@@ -64,7 +64,7 @@ namespace Functions
 }
 ```
 
-Using in IBM Cloud:
+Updating action (for IBM Cloud change "wsk" to "ibmcloud fn"):
 ```
 wsk action update {methodInfo.Name} out.zip --docker kamyker/openwhisk-action-dotnet-v3.1:stable --main {methodInfo.DeclaringType.Assembly.GetName().Name}::{methodInfo.DeclaringType.FullName}::{methodInfo.Name} --web true
 ```
