@@ -111,6 +111,7 @@ It's important to set your project to netcoreapp3.1 and use AspNetCore framework
 ```
 
 # UnitTest class instead of using cmd
+![openwhisk dotnet](https://i.gyazo.com/6a7b6dcb375b3bb8715271ca83f858ad.png)
 ```
 [TestClass]
 public class UploadFunctions
