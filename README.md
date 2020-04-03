@@ -109,3 +109,84 @@ It's important to set your project to netcoreapp3.1 and use AspNetCore framework
   </ItemGroup>
 </Project>
 ```
+
+# UnitTest class instead of using cmd
+```
+[TestClass]
+public class UploadFunctions
+{
+    string classPath;
+    MethodInfo methodInfo;
+    MethodInfo GetMethodInfo( Func<HttpContext, Task> d )
+    {
+        return d.Method;
+    }
+ 
+    [TestMethod]
+    public void Up_Hello()
+    {
+        methodInfo = GetMethodInfo( Functions.HelloClass.Hello );
+        UploadMethod();
+    }
+ 
+    //always keep namespaceName == {namespaceName}.csproj
+    public void UploadMethod()
+    {
+ 
+        var namespaceName = methodInfo.DeclaringType.Namespace;
+ 
+        string path = $"<PATH_TO_YOUR_PROJECT_FOLDER>\\namespaceName}";
+ 
+        var buildFolder = path + "\\out";
+        if ( Directory.Exists( buildFolder ) )
+            Directory.Delete( buildFolder, true );
+        Directory.CreateDirectory( buildFolder );
+ 
+        File.Delete( path + "\\out.zip" );
+        RunCommands(
+            new List<string>()
+            {
+                    $"dotnet restore {namespaceName}.csproj",
+                    $"dotnet publish {namespaceName}.csproj -c Release -o    out",
+                    @"cd out",
+                    @"C:\Program Files\7-Zip\7z.exe a -r ..\out.zip *",
+                    "pause"
+            },
+            path );
+ 
+        RunCommands( new List<string>() {
+                $"ibmcloud fn action update {methodInfo.Name} out.zip " +
+                $"--docker kamyker/openwhisk-action-dotnet-v3.1:stable " +
+                //$"--docker openwhisk/action-dotnet-v3.1 " +
+                $"--main {methodInfo.DeclaringType.Assembly.GetName().Name}::{methodInfo.DeclaringType.FullName}::{methodInfo.Name} --web raw",
+                "pause"
+            }, path );
+    }
+ 
+    public static void RunCommands( List<string> cmds, string workingDirectory = "" )
+    {
+        var process = new Process();
+        var psi = new ProcessStartInfo();
+        psi.FileName = "cmd.exe";
+        psi.RedirectStandardInput = true;
+        psi.RedirectStandardOutput = true;
+        psi.RedirectStandardError = true;
+        psi.UseShellExecute = false;
+        psi.WorkingDirectory = workingDirectory;
+        process.StartInfo = psi;
+        process.Start();
+        process.OutputDataReceived += ( sender, e ) => { Trace.WriteLine( e.Data ); };
+        process.ErrorDataReceived += ( sender, e ) => { Trace.WriteLine( e.Data ); };
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+        using ( StreamWriter sw = process.StandardInput )
+        {
+            foreach ( var cmd in cmds )
+            {
+                sw.WriteLine( cmd );
+            }
+        }
+        process.WaitForExit();
+    }
+}
+```
